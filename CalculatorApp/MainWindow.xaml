@@ -1,0 +1,137 @@
+using System;
+using System.Collections.Generic;
+using System.Windows;
+
+namespace CalculatorApp
+{
+    public partial class MainWindow : Window
+    {
+        private double? currentNumber = null;
+        private double? previousNumber = null;
+        private string currentOperation = null;
+        private List<Operation> operations = new List<Operation>();
+
+        public MainWindow()
+        {
+            InitializeComponent();
+            InitializeOperations();
+        }
+
+        private void InitializeOperations()
+        {
+            operations.Add(new Operation("+", (x, y) => x + y));
+            operations.Add(new Operation("-", (x, y) => x - y));
+            operations.Add(new Operation("*", (x, y) => x * y));
+            operations.Add(new Operation("/", (x, y) => x / y));
+            operations.Add(new Operation("^", Math.Pow));
+            operations.Add(new Operation("%", (x, y) => x % y));
+            operations.Add(new Operation("√", Math.Sqrt));
+            operations.Add(new Operation("1/x", x => 1 / x));
+            operations.Add(new Operation("!", Factorial));
+            operations.Add(new Operation("log", Math.Log10));
+            operations.Add(new Operation("ln", Math.Log));
+            operations.Add(new Operation("floor", Math.Floor));
+            operations.Add(new Operation("ceil", Math.Ceiling));
+        }
+
+        private double Factorial(double x)
+        {
+            if (x < 0)
+                throw new ArgumentException("Silnia nie jest zdefiniowana dla liczby ujemnej.");
+            if (x == 0)
+                return 1;
+            double result = 1;
+            for (int i = 1; i <= x; i++)
+            {
+                result *= i;
+            }
+            return result;
+        }
+
+        private void Number_Click(object sender, RoutedEventArgs e)
+        {
+            Button button = (Button)sender;
+            string numberStr = button.Content.ToString();
+            if (currentNumber == null)
+            {
+                currentNumber = double.Parse(numberStr);
+            }
+            else
+            {
+                currentNumber = double.Parse(currentNumber.ToString() + numberStr);
+            }
+            UpdateDisplay();
+        }
+
+        private void Operation_Click(object sender, RoutedEventArgs e)
+        {
+            if (currentNumber != null)
+            {
+                Button button = (Button)sender;
+                string operationName = button.Content.ToString();
+
+                if (currentOperation != null)
+                {
+                    PerformOperation();
+                }
+
+                previousNumber = currentNumber;
+                currentNumber = null;
+                currentOperation = operationName;
+
+                UpdateDisplay();
+            }
+        }
+
+        private void PerformOperation()
+        {
+            if (previousNumber != null && currentNumber != null && currentOperation != null)
+            {
+                foreach (var operation in operations)
+                {
+                    if (operation.OperationName == currentOperation)
+                    {
+                        if (operation.BinaryFunction != null)
+                        {
+                            currentNumber = operation.BinaryFunction((double)previousNumber, (double)currentNumber);
+                        }
+                        else if (operation.UnaryFunction != null)
+                        {
+                            currentNumber = operation.UnaryFunction((double)currentNumber);
+                        }
+                        break;
+                    }
+                }
+                previousNumber = null;
+                currentOperation = null;
+            }
+        }
+
+        private void Equals_Click(object sender, RoutedEventArgs e)
+        {
+            PerformOperation();
+            UpdateDisplay();
+        }
+
+        private void Clear_Click(object sender, RoutedEventArgs e)
+        {
+            currentNumber = null;
+            previousNumber = null;
+            currentOperation = null;
+            UpdateDisplay();
+        }
+
+        private void UpdateDisplay()
+        {
+            tbDisplay.Text = currentNumber != null ? currentNumber.ToString() : "0";
+            if (previousNumber != null && currentOperation != null)
+            {
+                tbOperation.Text = $"{previousNumber} {currentOperation}";
+            }
+            else
+            {
+                tbOperation.Text = "";
+            }
+        }
+    }
+}
